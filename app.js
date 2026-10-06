@@ -121,7 +121,7 @@ async function addLinks() {
       const {data: existing} = await supabase.from('media_assets').select('id').eq('source_url', url).maybeSingle();
       if (existing?.id) continue;
       const {data: media, error: mediaError} = await supabase.from('media_assets').insert({
-        file_name: `Instagram linki · ${url.split('/').filter(Boolean).pop() || 'video'}`,
+        file_name: `Instagram linki · ${(() => { try { return new URL(url).pathname.split('/').filter(Boolean).pop() || 'video'; } catch { return 'video'; } })()}`,
         public_url: `pending://${encodeURIComponent(url)}`,
         source_url: url,
         mime_type: 'video/mp4',
