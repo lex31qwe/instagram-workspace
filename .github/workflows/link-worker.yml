@@ -1,0 +1,48 @@
+name: Process Instagram Links
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "*/5 * * * *"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: instagram-link-worker
+  cancel-in-progress: false
+
+jobs:
+  process:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install downloader
+        run: python -m pip install --upgrade yt-dlp requests
+      - name: Create private worker config
+        env:
+          SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          CLOUDINARY_CLOUD_NAME: ${{ vars.CLOUDINARY_CLOUD_NAME }}
+          CLOUDINARY_UPLOAD_PRESET: ${{ vars.CLOUDINARY_UPLOAD_PRESET }}
+        run: |
+          python - <<'PY'
+          import json, os
+          config = {
+              "supabase_url": os.environ["SUPABASE_URL"],
+              "supabase_service_role_key": os.environ["SUPABASE_SERVICE_ROLE_KEY"],
+              "cloudinary_cloud_name": os.environ["CLOUDINARY_CLOUD_NAME"],
+              "cloudinary_upload_preset": os.environ["CLOUDINARY_UPLOAD_PRESET"],
+              "poll_seconds": 1,
+          }
+          with open("worker/worker_config.json", "w", encoding="utf-8") as file:
+              json.dump(config, file)
+          PY
+      - name: Process one queued link
+        run: python worker/instagram_link_worker.py --once

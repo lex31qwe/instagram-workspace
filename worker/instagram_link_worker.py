@@ -4,6 +4,7 @@ import subprocess
 import sys
 import tempfile
 import time
+import argparse
 from pathlib import Path
 
 import requests
@@ -94,6 +95,9 @@ def process(config, link):
 
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--once", action="store_true", help="Bir link işle ve çık; GitHub Actions modu")
+    args = parser.parse_args()
     config = load_config()
     delay = int(config.get("poll_seconds", 20))
     print("Instagram link worker çalışıyor. Çıkış: Ctrl+C")
@@ -104,8 +108,12 @@ def main():
             if link:
                 print(f"[İNDİRİLİYOR] {link['url']}")
                 process(config, link)
+                if args.once:
+                    return
             else:
                 print(f"[BEKLENİYOR] Yeni link aranıyor... ({delay} sn)", flush=True)
+                if args.once:
+                    return
                 time.sleep(delay)
         except KeyboardInterrupt:
             print("Worker kapatıldı.")
@@ -117,6 +125,8 @@ def main():
                     supabase_patch(config, "link_queue", {"id": f"eq.{link['id']}"}, {"status": "failed", "error_message": str(error)[:1000]})
                 except Exception as patch_error:
                     print(f"[HATA] Durum güncellenemedi: {patch_error}")
+            if args.once:
+                return
             time.sleep(delay)
 
 
