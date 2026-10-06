@@ -33,7 +33,14 @@ async function boot() {
 }
 async function signIn(event) { event.preventDefault(); if (!supabase) { toast('Supabase bağlantısı kurulmamış; config.js dosyasını oluşturun.', 'error'); return; } const email = $('auth-email').value.trim(), password = $('auth-password').value; const {error} = await supabase.auth.signInWithPassword({email,password}); if (error) toast(error.message, 'error'); }
 async function signOut() { if (supabase) await supabase.auth.signOut(); state.user = null; setVisible(false); }
-async function refreshAll() { await Promise.all([loadMedia(), loadLinks(), loadQueue(), loadAccounts(), loadHistory()]); updateDashboard(); fillAccounts(); }
+async function refreshAll() {
+  await Promise.all([loadMedia(), loadQueue(), loadAccounts(), loadHistory()]);
+  if (supabase) {
+    const pendingUrls = state.media.filter(item => item.status === 'queued' && item.source_url).map(item => item.source_url);
+    if (pendingUrls.length) await supabase.from('link_queue').update({status:'queued', error_message:null}).in('url', pendingUrls).eq('status','failed').ilike('error_message','%Bekleyen medya kaydı%');
+  }
+  await loadLinks(); updateDashboard(); fillAccounts();
+}
 async function selectRows(table, order = 'created_at') { if (!supabase) return []; const {data,error} = await supabase.from(table).select('*').order(order, {ascending:false}); if (error) { log(error.message, 'error'); toast(`${table} yüklenemedi: ${error.message}`, 'error'); return []; } return data || []; }
 async function loadMedia() { if (state.demo) return; state.media = await selectRows('media_assets'); renderMedia(); }
 async function loadLinks() { if (state.demo) return; state.links = await selectRows('link_queue'); }
