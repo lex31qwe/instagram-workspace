@@ -105,7 +105,7 @@ async function addLinks() {
   const valid = [...new Set(urls.filter(url => /^https?:\/\/(www\.)?instagram\.com\/(reel|p|tv)\//i.test(url)))]; if (!valid.length) return toast('Instagram reel, post veya video linki bulunamadı.', 'error');
   if (supabase) {
     // Schema uses UNIQUE(owner_id, url); owner_id is filled by auth.uid().
-    const {error} = await supabase.from('link_queue').upsert(valid.map(url => ({url,status:'queued'})), {onConflict:'owner_id,url', ignoreDuplicates:true});
+    const {error} = await supabase.from('link_queue').upsert(valid.map(url => ({url,status:'queued',error_message:null})), {onConflict:'owner_id,url'});
     if (error) return toast(error.message, 'error');
     await loadLinks();
     // Create an immediate placeholder in the publish queue. The worker later
