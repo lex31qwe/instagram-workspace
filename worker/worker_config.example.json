@@ -1,0 +1,7 @@
+{
+  "supabase_url": "https://PROJECT_REF.supabase.co",
+  "supabase_service_role_key": "SUPABASE_SERVICE_ROLE_KEY_BURAYA",
+  "cloudinary_cloud_name": "CLOUDINARY_CLOUD_NAME_BURAYA",
+  "cloudinary_upload_preset": "CLOUDINARY_UNSIGNED_PRESET_BURAYA",
+  "poll_seconds": 20
+}

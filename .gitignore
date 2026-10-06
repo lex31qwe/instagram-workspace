@@ -5,3 +5,6 @@ config.js
 node_modules/
 .DS_Store
 supabase/.temp/
+worker/worker_config.json
+*.zip
+worker/__pycache__/

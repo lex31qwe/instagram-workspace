@@ -53,7 +53,11 @@ function updateDashboard() {
   $('stat-queued').textContent = queued; $('stat-processing').textContent = processing; $('stat-published').textContent = published; $('stat-failed').textContent = failed;
   const activity = state.history.slice(0,5); $('dashboard-activity').innerHTML = activity.length ? activity.map(item => `<div class="activity"><span class="activity-icon">${item.level === 'error' ? '!' : '✓'}</span><div><b>${esc(item.message || item.status || 'İşlem')}</b><small>${fmtDate(item.created_at)}</small></div></div>`).join('') : '<div class="empty-state">Henüz yayın hareketi yok.</div>';
 }
-function mediaUrl(item) { return item.public_url || item.source_url || ''; }
+function mediaUrl(item) {
+  if (!item) return '';
+  if (String(item.public_url || '').startsWith('pending://')) return '';
+  return item.public_url || (String(item.source_url || '').startsWith('https://res.cloudinary.com/') ? item.source_url : '');
+}
 function renderMedia() {
   const query = ($('media-search')?.value || '').toLowerCase(); const filter = $('media-filter')?.value || 'all';
   const items = state.media.filter(item => (!query || item.file_name.toLowerCase().includes(query)) && (filter === 'all' || (filter === 'uploaded' && item.status === 'ready') || item.status === filter));
@@ -68,9 +72,29 @@ async function addToQueue(mediaId) {
   state.queue.unshift(item); state.selectedQueueId = item.id; renderQueue(); updateDashboard(); navigate('queue'); toast('Medya yayın kuyruğuna alındı.');
 }
 function renderQueue() {
-  const items = state.queue; $('queue-list').innerHTML = items.length ? items.map(item => { const media = state.media.find(m => m.id === item.media_id); return `<article class="queue-item ${state.selectedQueueId === item.id ? 'selected' : ''}"><div class="queue-thumb">${media && mediaUrl(media) ? `<video src="${esc(mediaUrl(media))}" muted preload="metadata"></video>` : '▶'}</div><div><b>${esc(item.file_name || media?.file_name || 'Video')}</b><small>${esc(item.status || 'queued')} · ${fmtDate(item.created_at)}</small></div><button class="${state.selectedQueueId === item.id ? 'primary' : 'ghost'} small select-queue" data-queue-id="${esc(item.id)}">${state.selectedQueueId === item.id ? 'Seçildi' : 'Seç'}</button></article>`; }).join('') : '<div class="empty-state">Kuyruk boş. Medya merkezinden video ekleyin.</div>';
+  const items = state.queue; $('queue-list').innerHTML = items.length ? items.map(item => { const media = state.media.find(m => m.id === item.media_id); const displayStatus = media && !mediaUrl(media) ? 'İndirme bekleniyor' : (item.status || 'queued'); return `<article class="queue-item ${state.selectedQueueId === item.id ? 'selected' : ''}"><div class="queue-thumb">${media && mediaUrl(media) ? `<video src="${esc(mediaUrl(media))}" muted preload="metadata"></video>` : '▶'}</div><div><b>${esc(item.file_name || media?.file_name || 'Video')}</b><small>${esc(displayStatus)} · ${fmtDate(item.created_at)}</small></div><button class="${state.selectedQueueId === item.id ? 'primary' : 'ghost'} small select-queue" data-queue-id="${esc(item.id)}">${state.selectedQueueId === item.id ? 'Seçildi' : 'Seç'}</button><button class="danger small delete-queue" data-queue-id="${esc(item.id)}">Sil</button></article>`; }).join('') : '<div class="empty-state">Kuyruk boş. Medya merkezinden video ekleyin.</div>';
   document.querySelectorAll('.select-queue').forEach(btn => btn.addEventListener('click', () => { state.selectedQueueId = btn.dataset.queueId; const item = state.queue.find(x => x.id === state.selectedQueueId); $('caption-input').value = item?.caption || ''; updateCaptionCounter(); renderQueue(); }));
+  document.querySelectorAll('.delete-queue').forEach(btn => btn.addEventListener('click', () => deleteQueueItem(btn.dataset.queueId)));
   const selected = state.queue.find(x => x.id === state.selectedQueueId); $('caption-input').value = selected?.caption || $('caption-input').value || ''; updateCaptionCounter();
+}
+async function deleteQueueItem(queueId) {
+  const item = state.queue.find(x => x.id === queueId); if (!item) return;
+  const media = state.media.find(x => x.id === item.media_id);
+  if (!window.confirm('Bu video yayın kuyruğundan silinsin mi? Bu işlem geri alınamaz.')) return;
+  if (supabase && media?.cloudinary_public_id) {
+    const {data, error} = await supabase.functions.invoke(cfg.EDGE_FUNCTION_NAME || 'instagram', {body:{action:'delete_media',cloudinary_public_id:media.cloudinary_public_id}});
+    if (error || data?.error) return toast(data?.error || error?.message || 'Cloudinary videosu silinemedi.', 'error');
+  }
+  if (supabase) {
+    const {error} = await supabase.from('publish_queue').delete().eq('id', queueId);
+    if (error) return toast(`Kuyruk kaydı silinemedi: ${error.message}`, 'error');
+    if (media && state.queue.filter(x => x.media_id === media.id).length === 1) {
+      await supabase.from('media_assets').delete().eq('id', media.id);
+      if (media.source_url) await supabase.from('link_queue').delete().eq('url', media.source_url);
+    }
+  }
+  state.queue = state.queue.filter(x => x.id !== queueId); state.media = state.media.filter(x => !media || x.id !== media.id); if (state.selectedQueueId === queueId) state.selectedQueueId = null;
+  renderQueue(); renderMedia(); updateDashboard(); toast('Video yayın kuyruğundan silindi.');
 }
 function fillAccounts() { $('target-account').innerHTML = '<option value="">Hesap seçin</option>' + state.accounts.map(a => `<option value="${esc(a.key || a.label)}">${esc(a.label)}</option>`).join(''); }
 function renderAccounts() { $('accounts-list').innerHTML = state.accounts.length ? state.accounts.map(a => `<article class="account-card"><span class="account-avatar">◎</span><div><b>${esc(a.label)}</b><small>Business ID: ${esc(a.instagram_user_id || 'gizli')}</small><small><span class="status-dot ok"></span> Edge Function bağlı</small></div></article>`).join('') : '<div class="empty-state">Henüz hesap bilgisi bağlanmadı.</div>'; }
@@ -78,10 +102,32 @@ function renderHistory() { const filter = $('history-filter')?.value || 'all'; c
 function updateCaptionCounter() { $('caption-counter').textContent = `${$('caption-input').value.length} / 2200`; }
 async function addLinks() {
   const urls = $('link-input').value.split(/\n+/).map(x => x.trim()).filter(Boolean); if (!urls.length) return toast('En az bir link girin.', 'error');
-  const valid = urls.filter(url => /^https?:\/\/(www\.)?instagram\.com\/(reel|p|tv)\//i.test(url)); if (!valid.length) return toast('Instagram reel, post veya video linki bulunamadı.', 'error');
-  if (supabase) { const {error} = await supabase.from('link_queue').upsert(valid.map(url => ({url,status:'queued'})), {onConflict:'url'}); if (error) return toast(error.message, 'error'); await loadLinks(); }
-  else state.links.unshift(...valid.map(url => ({id:uid(),url,status:'queued',created_at:new Date().toISOString()})));
-  $('link-input').value = ''; toast(`${valid.length} link kuyruğa not edildi.`); updateDashboard();
+  const valid = [...new Set(urls.filter(url => /^https?:\/\/(www\.)?instagram\.com\/(reel|p|tv)\//i.test(url)))]; if (!valid.length) return toast('Instagram reel, post veya video linki bulunamadı.', 'error');
+  if (supabase) {
+    // Schema uses UNIQUE(owner_id, url); owner_id is filled by auth.uid().
+    const {error} = await supabase.from('link_queue').upsert(valid.map(url => ({url,status:'queued'})), {onConflict:'owner_id,url', ignoreDuplicates:true});
+    if (error) return toast(error.message, 'error');
+    await loadLinks();
+    // Create an immediate placeholder in the publish queue. The worker later
+    // replaces the pending URL with the Cloudinary HTTPS video URL.
+    for (const url of valid) {
+      const {data: existing} = await supabase.from('media_assets').select('id').eq('source_url', url).maybeSingle();
+      if (existing?.id) continue;
+      const {data: media, error: mediaError} = await supabase.from('media_assets').insert({
+        file_name: `Instagram linki · ${url.split('/').filter(Boolean).pop() || 'video'}`,
+        public_url: `pending://${encodeURIComponent(url)}`,
+        source_url: url,
+        mime_type: 'video/mp4',
+        status: 'queued'
+      }).select().single();
+      if (mediaError) return toast(`Link yayın kuyruğuna alınamadı: ${mediaError.message}`, 'error');
+      const {data: queued, error: queueError} = await supabase.from('publish_queue').insert({media_id: media.id, caption:'', status:'queued'}).select().single();
+      if (queueError) return toast(`Yayın kuyruğu kaydı oluşturulamadı: ${queueError.message}`, 'error');
+      state.media.unshift(media); state.queue.unshift({...queued, file_name: media.file_name});
+    }
+    renderMedia(); renderQueue(); updateDashboard();
+  } else state.links.unshift(...valid.map(url => ({id:uid(),url,status:'queued',created_at:new Date().toISOString()})));
+  $('link-input').value = ''; toast(`${valid.length} link yayın kuyruğuna alındı. Worker başlatılınca Cloudinary’ye indirilecek.`); updateDashboard(); navigate('queue');
 }
 function handleFile(file) { if (!file) return; if (!file.type.startsWith('video/')) return toast('Lütfen video dosyası seçin.', 'error'); uploadVideo(file); }
 function uploadVideo(file) {
@@ -91,12 +137,17 @@ function uploadVideo(file) {
 }
 async function publishSelected() {
   const item = state.queue.find(x => x.id === state.selectedQueueId), account = $('target-account').value, caption = $('caption-input').value.trim();
-  if (!item) return toast('Önce kuyruktan bir medya seçin.', 'error'); if (!account) return toast('Hedef Instagram hesabını seçin.', 'error'); const media = state.media.find(x => x.id === item.media_id); if (!media || !mediaUrl(media)) return toast('Medyanın HTTPS adresi bulunamadı.', 'error');
+  if (!item) return toast('Önce kuyruktan bir medya seçin.', 'error'); if (!account) return toast('Hedef Instagram hesabını seçin.', 'error'); const media = state.media.find(x => x.id === item.media_id); if (!media || !mediaUrl(media)) return toast('Video henüz Cloudinary’ye yüklenmedi. Worker penceresini açık bırakın; yükleme bitince Yenile yapın.', 'error');
   item.caption=caption; item.account_key=account; item.status='processing'; renderQueue(); updateDashboard(); $('queue-status-title').textContent='Instagram işliyor'; $('queue-status-detail').textContent='Container oluşturuluyor ve işlenmesi bekleniyor.';
   if (supabase) await supabase.from('publish_queue').update({caption,account_key:account,status:'processing'}).eq('id',item.id);
   if (state.demo) { setTimeout(() => { item.status='published'; state.history.unshift({id:uid(),message:'Demo yayın başarılı',status:'published',created_at:new Date().toISOString()}); renderQueue(); renderHistory(); updateDashboard(); $('queue-status-title').textContent='Demo yayın başarılı'; toast('Demo modunda yayın simüle edildi.'); }, 1000); return; }
-  const {data,error} = await supabase.functions.invoke(cfg.EDGE_FUNCTION_NAME || 'instagram', {body:{action:'publish',account_key:account,media_url:mediaUrl(media),caption,queue_id:item.id}});
-  if (error || data?.error) { item.status='failed'; const msg=data?.error || error?.message || 'Yayın başarısız.'; $('queue-status-title').textContent='Yayın başarısız'; $('queue-status-detail').textContent=msg; toast(msg,'error'); await writeLog(msg,'error',item.id); } else { item.status='published'; $('queue-status-title').textContent='Yayın başarılı'; $('queue-status-detail').textContent=`Instagram medya ID: ${data.instagram_media_id || 'hazır'}`; toast('Instagram yayını başarılı.'); await writeLog('Instagram yayını başarılı.','info',item.id); }
+  const {data,error} = await supabase.functions.invoke(cfg.EDGE_FUNCTION_NAME || 'instagram', {body:{action:'publish',account_key:account,media_url:mediaUrl(media),caption,queue_id:item.id,cloudinary_public_id:media.cloudinary_public_id || null}});
+  if (error || data?.error) {
+    item.status='failed'; let msg=data?.error || '';
+    if (!msg && error?.context?.json) { try { const body=await error.context.json(); msg=body?.error || body?.message || ''; } catch (_) {} }
+    msg=msg || error?.message || 'Yayın başarısız.';
+    $('queue-status-title').textContent='Yayın başarısız'; $('queue-status-detail').textContent=msg; toast(msg,'error'); await writeLog(msg,'error',item.id);
+  } else { item.status='published'; $('queue-status-title').textContent='Yayın başarılı'; $('queue-status-detail').textContent=`Instagram medya ID: ${data.instagram_media_id || 'hazır'}`; toast('Instagram yayını başarılı.'); await writeLog('Instagram yayını başarılı.','info',item.id); }
   await loadQueue(); await loadHistory(); updateDashboard();
 }
 async function writeLog(message, level='info', queueId=null) { if (supabase) await supabase.from('publish_logs').insert({message,level,queue_id:queueId,status:level === 'error' ? 'failed' : 'info'}); else state.history.unshift({id:uid(),message,level,created_at:new Date().toISOString(),status:level}); renderHistory(); }
