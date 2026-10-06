@@ -1,0 +1,5 @@
+# Supabase CLI için proje ayarı. YOUR_PROJECT_REF yerine kendi project ref'inizi yazın.
+project_id = "YOUR_PROJECT_REF"
+
+[functions.instagram]
+verify_jwt = true

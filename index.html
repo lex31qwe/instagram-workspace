@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#101827">
+  <meta name="description" content="Instagram Workspace — videodan yayına tek akış.">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='18' fill='%23ff6b5f'/%3E%3Crect x='17' y='17' width='30' height='30' rx='9' fill='none' stroke='white' stroke-width='5'/%3E%3Ccircle cx='32' cy='32' r='7' fill='white'/%3E%3Ccircle cx='43' cy='21' r='3' fill='white'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="./styles.css?v=2">
+  <title>Instagram Workspace</title>
+</head>
+<body>
+  <div id="toast-region" class="toast-region" aria-live="polite"></div>
+  <section id="auth-view" class="auth-shell">
+    <div class="auth-card">
+      <div class="brand-mark" aria-hidden="true"><span></span></div>
+      <p class="eyebrow">INSTAGRAM WORKSPACE</p>
+      <h1>Videodan yayına<br><em>tek akış.</em></h1>
+      <p class="muted">Tek hesabınız için mobil yayın paneli. Kuyruğu düzenleyin, API durumunu izleyin.</p>
+      <form id="auth-form" class="stack-form">
+        <label>E-posta<input id="auth-email" type="email" autocomplete="email" required placeholder="siz@ornek.com"></label>
+        <label>Şifre<input id="auth-password" type="password" autocomplete="current-password" required placeholder="••••••••"></label>
+        <button class="primary wide" type="submit">Panele giriş yap</button>
+      </form>
+      <p class="form-note">İlk kurulumda Supabase Auth içinde oluşturduğunuz hesapla giriş yapın.</p>
+    </div>
+  </section>
+
+  <div id="app-view" class="app-shell hidden">
+    <aside class="sidebar">
+      <a class="brand-lockup" href="#dashboard" data-route="dashboard"><span class="mini-mark">◎</span><span>Instagram<br><b>Workspace</b></span></a>
+      <nav class="desktop-nav" aria-label="Ana menü">
+        <button data-route="dashboard" class="nav-item active"><span>◈</span> Kontrol Paneli</button>
+        <button data-route="media" class="nav-item"><span>▣</span> Medya & Linkler</button>
+        <button data-route="queue" class="nav-item"><span>↗</span> Yayın Kuyruğu</button>
+        <button data-route="accounts" class="nav-item"><span>◎</span> Instagram Hesapları</button>
+        <button data-route="history" class="nav-item"><span>◷</span> Geçmiş & Loglar</button>
+        <button data-route="settings" class="nav-item"><span>⚙</span> Ayarlar</button>
+      </nav>
+      <div class="sidebar-foot"><span class="status-dot ok"></span><span id="connection-label">Bağlantı kontrol ediliyor</span><button id="logout-btn" class="text-button">Çıkış</button></div>
+    </aside>
+
+    <main class="main-content">
+      <header class="topbar"><div><p class="eyebrow">BUGÜN NE VAR?</p><h2 id="page-title">Kontrol Paneli</h2></div><div class="top-actions"><button id="theme-toggle" class="icon-button" title="Tema değiştir">☼</button><button id="install-btn" class="ghost small hidden">Ana ekrana ekle</button><div class="avatar">İW</div></div></header>
+
+      <section id="view-dashboard" class="view active-view">
+        <div class="hero-banner"><div><span class="pill coral">YAYIN MERKEZİ</span><h3>Akışınız kontrol altında.</h3><p>Videoları yükleyin, hedef hesabı seçin ve Instagram durumunu tek ekrandan izleyin.</p></div><button class="primary" data-route="media">Video ekle <span>↗</span></button></div>
+        <div class="stat-grid"><article class="stat-card"><span class="stat-icon coral-bg">◉</span><div><span class="stat-label">Kuyrukta</span><strong id="stat-queued">0</strong><small>yayın bekliyor</small></div></article><article class="stat-card"><span class="stat-icon blue-bg">▣</span><div><span class="stat-label">İşleniyor</span><strong id="stat-processing">0</strong><small>aktif içerik</small></div></article><article class="stat-card"><span class="stat-icon green-bg">✓</span><div><span class="stat-label">Yayınlandı</span><strong id="stat-published">0</strong><small>başarılı sonuç</small></div></article><article class="stat-card"><span class="stat-icon amber-bg">!</span><div><span class="stat-label">Hatalı</span><strong id="stat-failed">0</strong><small>yeniden denenebilir</small></div></article></div>
+        <div class="content-grid two-col"><section class="panel"><div class="panel-heading"><div><span class="eyebrow">SON HAREKETLER</span><h3>Yayın akışı</h3></div><button class="text-button" data-route="history">Tümünü gör →</button></div><div id="dashboard-activity" class="activity-list"><div class="empty-state">Henüz yayın hareketi yok.</div></div></section><section class="panel accent-panel"><div class="panel-heading"><div><span class="eyebrow">HIZLI İŞLEM</span><h3>Bir sonraki adım</h3></div></div><div class="quick-stack"><button class="quick-action" data-route="media"><span class="quick-symbol">＋</span><span><b>Video yükle</b><small>Telefondan MP4 seçin</small></span><span>→</span></button><button class="quick-action" data-route="accounts"><span class="quick-symbol">◎</span><span><b>Hesapları kontrol et</b><small>Bağlantı ve token durumu</small></span><span>→</span></button><button class="quick-action" data-route="queue"><span class="quick-symbol">↗</span><span><b>Kuyruğu düzenle</b><small>Açıklama ve hedef seçin</small></span><span>→</span></button></div></section></div>
+      </section>
+
+      <section id="view-media" class="view"><div class="section-intro"><div><span class="eyebrow">MEDYA MERKEZİ</span><h3>Videoları topla</h3><p>Telefondan MP4 yükleyin veya Instagram linkini kuyruğa not olarak ekleyin.</p></div><label class="file-button primary">Video seç<input id="video-input" type="file" accept="video/mp4,video/quicktime,video/*" hidden></label></div><div class="upload-card" id="upload-card"><div class="drop-icon">↑</div><div><b>Video dosyasını buraya seçin</b><span>MP4 önerilir · Cloudinary’ye güvenli HTTPS yükleme</span></div><label class="ghost">Dosya seç<input id="video-input-secondary" type="file" accept="video/*" hidden></label></div><div id="upload-progress" class="progress-wrap hidden"><div class="progress-meta"><span id="upload-name">Yükleniyor</span><span id="upload-percent">0%</span></div><div class="progress-track"><i id="upload-bar"></i></div></div><div class="link-entry panel"><div class="panel-heading"><div><span class="eyebrow">AYRI GİRİŞ</span><h3>Instagram linki ekle</h3></div><span class="muted">İndirme worker’ı sonraki adımda bağlanacak</span></div><textarea id="link-input" rows="3" placeholder="Her satıra bir Instagram reel veya post linki..."></textarea><div class="form-actions"><button id="add-links-btn" class="primary">Kuyruğa not ekle</button><button id="clear-links-btn" class="ghost">Temizle</button></div></div><section class="panel"><div class="panel-heading"><h3>Medya kitaplığı</h3><div class="filter-row"><input id="media-search" class="compact-input" placeholder="Ara..."/><select id="media-filter"><option value="all">Tümü</option><option value="uploaded">Hazır</option><option value="queued">Kuyrukta</option><option value="failed">Hatalı</option></select></div></div><div id="media-grid" class="media-grid"><div class="empty-state">Henüz medya yok.</div></div></section></section>
+
+      <section id="view-queue" class="view"><div class="section-intro"><div><span class="eyebrow">YAYIN KUYRUĞU</span><h3>Gönderiye son dokunuş</h3><p>Videoyu seçin, hesabı belirleyin ve açıklamanızı hazırlayın.</p></div><button id="publish-selected-btn" class="primary">Seçileni yayınla ↗</button></div><div id="queue-list" class="queue-list"><div class="empty-state">Kuyruk boş. Medya merkezinden video ekleyin.</div></div><div class="editor-layout"><section class="panel"><div class="panel-heading"><h3>Açıklama / hashtag</h3><span id="caption-counter" class="muted">0 / 2200</span></div><textarea id="caption-input" class="caption-editor" maxlength="2200" placeholder="Bugünkü paylaşımınız için açıklama ve hashtag yazın..."></textarea><div class="template-row"><button id="save-template-btn" class="ghost small">Şablonu kaydet</button><button id="load-template-btn" class="ghost small">Şablonu yükle</button></div></section><section class="panel"><div class="panel-heading"><h3>Hedef hesap</h3><button id="refresh-accounts-btn" class="text-button">Yenile</button></div><select id="target-account" class="full-select"><option value="">Hesap seçin</option></select><div class="live-status"><span class="status-dot" id="queue-status-dot"></span><div><b id="queue-status-title">Hazır</b><small id="queue-status-detail">Yayın başlatmak için bir medya seçin.</small></div></div></section></div></section>
+
+      <section id="view-accounts" class="view"><div class="section-intro"><div><span class="eyebrow">BAĞLI PROFESYONEL HESAPLAR</span><h3>Instagram hesapları</h3><p>Tokenlar Supabase Edge Function secret’ında tutulur; burada yalnızca güvenli hesap etiketi görünür.</p></div><button id="test-accounts-btn" class="ghost">Bağlantıyı test et</button></div><div id="accounts-list" class="account-list"><div class="empty-state">Henüz hesap bilgisi bağlanmadı.</div></div><div class="notice-card"><b>Kurulum notu</b><p>Hesapları eklemek için README içindeki <code>INSTAGRAM_ACCOUNTS_JSON</code> secret adımını tamamlayın. Access Token’ı bu sayfaya veya GitHub’a yazmayın.</p></div></section>
+
+      <section id="view-history" class="view"><div class="section-intro"><div><span class="eyebrow">KAYIT DEFTERİ</span><h3>Geçmiş & loglar</h3><p>Başarılı ve hatalı işlemleri UTF-8 ayrıntılarıyla inceleyin.</p></div><div class="filter-row"><select id="history-filter"><option value="all">Tüm sonuçlar</option><option value="published">Yayınlandı</option><option value="failed">Hatalı</option><option value="queued">Kuyrukta</option></select><button id="retry-failed-btn" class="ghost">Hatalıları yeniden dene</button></div></div><div id="history-list" class="history-list"><div class="empty-state">Henüz geçmiş yok.</div></div></section>
+
+      <section id="view-settings" class="view"><div class="section-intro"><div><span class="eyebrow">ÇALIŞMA ALANI</span><h3>Ayarlar</h3><p>Panel görünümünü ve bağlantı tercihlerini özelleştirin.</p></div></div><div class="settings-grid"><section class="panel"><div class="panel-heading"><h3>Görünüm</h3></div><div class="setting-row"><div><b>Koyu tema</b><small>Gece kullanımı için düşük parlaklık</small></div><label class="switch"><input id="dark-mode-toggle" type="checkbox" checked><span></span></label></div><div class="setting-row"><div><b>Otomatik yenileme</b><small>Yayın durumunu periyodik kontrol et</small></div><label class="switch"><input id="auto-refresh-toggle" type="checkbox" checked><span></span></label></div></section><section class="panel"><div class="panel-heading"><h3>Güvenlik</h3></div><div class="security-note"><span class="status-dot ok"></span><div><b>Token izolasyonu aktif</b><small>Gizli bilgiler Edge Function tarafında tutuluyor.</small></div></div><button id="logout-btn-settings" class="ghost wide">Oturumu kapat</button></section></div></section>
+    </main>
+    <nav class="mobile-nav"><button data-route="dashboard" class="active"><span>◈</span><small>Panel</small></button><button data-route="media"><span>▣</span><small>Medya</small></button><button data-route="queue"><span>↗</span><small>Kuyruk</small></button><button data-route="history"><span>◷</span><small>Geçmiş</small></button><button data-route="settings"><span>⚙</span><small>Ayarlar</small></button></nav>
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="./config.js"></script>
+  <script src="./app.js?v=2" type="module"></script>
+</body>
+</html>
