@@ -41,11 +41,11 @@ def supabase_patch(config, table, params, payload):
 
 def claim_link(config):
     # Tek worker kullanıldığı için yarım kalan processing kaydı yeniden denenebilir.
-    links = supabase_get(config, "link_queue", {"status": "in.(queued,processing,failed)", "order": "created_at.asc", "limit": "1", "select": "id,owner_id,url"})
+    links = supabase_get(config, "link_queue", {"status": "in.(queued,processing)", "order": "created_at.asc", "limit": "1", "select": "id,owner_id,url"})
     if not links:
         return None
     link = links[0]
-    supabase_patch(config, "link_queue", {"id": f"eq.{link['id']}", "status": "in.(queued,processing,failed)"}, {"status": "processing", "error_message": None})
+    supabase_patch(config, "link_queue", {"id": f"eq.{link['id']}", "status": "in.(queued,processing)"}, {"status": "processing", "error_message": None})
     return link
 
 
