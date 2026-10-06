@@ -42,12 +42,15 @@ def supabase_patch(config, table, params, payload):
 
 def claim_link(config):
     # Tek worker kullanıldığı için yarım kalan processing kaydı yeniden denenebilir.
-    rows = supabase_get(config, "link_queue", {"order": "created_at.asc", "limit": "100", "select": "id,owner_id,url,status"})
+    rows = supabase_get(config, "link_queue", {"order": "created_at.asc", "limit": "100", "select": "id,owner_id,url,status,error_message"})
     counts = {}
     for row in rows:
         counts[row.get("status", "unknown")] = counts.get(row.get("status", "unknown"), 0) + 1
     if counts:
         print(f"[DURUM] Link kuyruğu: {counts}", flush=True)
+        for row in rows:
+            if row.get("status") == "failed" and row.get("error_message"):
+                print(f"[HATA-KAYDI] {str(row['error_message'])[:700]}", flush=True)
     links = [row for row in rows if row.get("status") in ("queued", "processing")]
     if not links:
         return None
