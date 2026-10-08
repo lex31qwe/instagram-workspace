@@ -144,7 +144,7 @@ function uploadVideo(file) {
 }
 async function publishSelected() {
   const item = state.queue.find(x => x.id === state.selectedQueueId), account = $('target-account').value, caption = $('caption-input').value.trim();
-  if (!item) return toast('Önce kuyruktan bir medya seçin.', 'error'); if (!account) return toast('Hedef Instagram hesabını seçin.', 'error'); const media = state.media.find(x => x.id === item.media_id); if (!media || !mediaUrl(media)) return toast('Video henüz Cloudinary’ye yüklenmedi. Worker penceresini açık bırakın; yükleme bitince Yenile yapın.', 'error');
+  if (!item) return toast('Önce kuyruktan bir medya seçin.', 'error'); if (!account) return toast('Hedef Instagram hesabını seçin.', 'error'); const media = state.media.find(x => x.id === item.media_id); if (!media || !mediaUrl(media)) return toast('Video henüz Cloudinary’ye yüklenmedi. Cloud worker yaklaşık 5 dakikada bir çalışır; biraz sonra Yenile yapın.', 'error');
   item.caption=caption; item.account_key=account; item.status='processing'; renderQueue(); updateDashboard(); $('queue-status-title').textContent='Instagram işliyor'; $('queue-status-detail').textContent='Container oluşturuluyor ve işlenmesi bekleniyor.';
   if (supabase) await supabase.from('publish_queue').update({caption,account_key:account,status:'processing'}).eq('id',item.id);
   if (state.demo) { setTimeout(() => { item.status='published'; state.history.unshift({id:uid(),message:'Demo yayın başarılı',status:'published',created_at:new Date().toISOString()}); renderQueue(); renderHistory(); updateDashboard(); $('queue-status-title').textContent='Demo yayın başarılı'; toast('Demo modunda yayın simüle edildi.'); }, 1000); return; }

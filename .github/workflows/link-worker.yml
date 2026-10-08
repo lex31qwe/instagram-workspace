@@ -44,5 +44,5 @@ jobs:
           with open("worker/worker_config.json", "w", encoding="utf-8") as file:
               json.dump(config, file)
           PY
-      - name: Process one queued link
-        run: python worker/instagram_link_worker.py --once
+      - name: Process queued links
+        run: python worker/instagram_link_worker.py --batch 5

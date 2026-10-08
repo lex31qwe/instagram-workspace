@@ -106,9 +106,11 @@ def process(config, link):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--once", action="store_true", help="Bir link işle ve çık; GitHub Actions modu")
+    parser.add_argument("--batch", type=int, default=0, help="Bir çalışmada en fazla bu kadar link işle")
     args = parser.parse_args()
     config = load_config()
     delay = int(config.get("poll_seconds", 20))
+    processed = 0
     print("Instagram link worker çalışıyor. Çıkış: Ctrl+C")
     while True:
         link = None
@@ -117,7 +119,10 @@ def main():
             if link:
                 print(f"[İNDİRİLİYOR] {link['url']}")
                 process(config, link)
+                processed += 1
                 if args.once:
+                    return
+                if args.batch and processed >= args.batch:
                     return
             else:
                 print(f"[BEKLENİYOR] Yeni link aranıyor... ({delay} sn)", flush=True)
